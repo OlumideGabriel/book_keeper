@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ book.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-edit me-2"></i>Edit Book: {{ book.title }}
+            </h4>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        {{ form.title.label(class="form-label") }}
+                        {{ form.title(class="form-control") }}
+                        {% if form.title.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.title.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="publication_date" class="form-label">Publication Date*</label>
+                        <input type="date" class="form-control" id="publication_date"
+                               name="publication_date" value="{{ publication_date }}" required>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        {{ form.author_id.label(class="form-label") }}
+                        {{ form.author_id(class="form-select") }}
+                        {% if form.author_id.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.author_id.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.isbn.label(class="form-label") }}
+                        {{ form.isbn(class="form-control") }}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="thumbnail" class="form-label">Cover Image URL</label>
+                    <div class="input-group mb-2">
+                        {{ form.thumbnail(class="form-control", placeholder="https://example.com/image.jpg") }}
+                        <button type="button" class="btn btn-outline-secondary" id="fetch-thumbnail">
+                            <i class="fas fa-image me-1"></i> Retrieve Cover
+                        </button>
+                    </div>
+                    {% if book.thumbnail %}
+                    <div class="mt-2 text-center">
+                        <img src="{{ book.thumbnail }}" alt="Current cover"
+                             class="img-thumbnail" style="max-height: 200px;" id="book-cover">
+                        <p class="text-muted mt-1">Current Cover</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('book_detail', book_id=book.id) }}"
+                       class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+document.getElementById('fetch-thumbnail').addEventListener('click', function() {
+    const isbn = document.getElementById('isbn').value;
+    const title = document.getElementById('title').value;
+    const authorSelect = document.getElementById('author_id');
+    const authorName = authorSelect.options[authorSelect.selectedIndex].text;
+
+    if (!isbn && (!title || !authorName)) {
+        alert('Please enter at least ISBN or both Title and Author');
+        return;
+    }
+
+    // Show loading state
+    const btn = this;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Searching...';
+    btn.disabled = true;
+
+    // Make AJAX request to your backend
+    fetch(`/get_thumbnail?isbn=${encodeURIComponent(isbn)}&title=${encodeURIComponent(title)}&author=${encodeURIComponent(authorName)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.thumbnail) {
+                document.getElementById('thumbnail').value = data.thumbnail;
+                const img = document.getElementById('book-cover') || document.createElement('img');
+                img.src = data.thumbnail;
+                img.alt = "Generated cover";
+                img.className = "img-thumbnail";
+                img.style.maxHeight = "200px";
+                img.id = "book-cover";
+
+                const imgContainer = document.querySelector('.mb-3 .text-center') || document.createElement('div');
+                imgContainer.className = "mt-2 text-center";
+                imgContainer.innerHTML = '';
+                imgContainer.appendChild(img);
+                imgContainer.innerHTML += '<p class="text-muted mt-1">Generated Cover</p>';
+
+                if (!document.getElementById('book-cover')) {
+                    document.querySelector('.mb-3').appendChild(imgContainer);
+                }
+            } else {
+                alert('No cover image found for this book');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error fetching cover image');
+        })
+        .finally(() => {
+            btn.innerHTML = '<i class="fas fa-image me-1"></i> Retrieve Cover';
+            btn.disabled = false;
+        });
+});
+</script>
+{% endblock %}
