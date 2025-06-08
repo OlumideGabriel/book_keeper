@@ -43,10 +43,6 @@
                                         {{ author.book_count }} book{% if author.book_count != 1 %}s{% endif %}
                                     </p>
                                     <div class="d-flex justify-content-center gap-2">
-                                        <!-- Edit button can remain as a regular link -->
-                                        <a href="/author/{{ author.id }}/edit" class="btn btn-sm btn-outline-secondary">
-                                            <i class="fas fa-edit me-1"></i> Edit
-                                        </a>
 
                                         <!-- Delete button needs to be a form for POST request -->
                                         <form action="/author/{{ author.id }}/delete" method="POST" class="d-inline">

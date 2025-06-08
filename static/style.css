@@ -354,3 +354,16 @@ table {
   margin-left: 10px;
   line-height: 30px;
 }
+
+/* Book Rating */
+.rating-star {
+    transition: all 0.2s ease;
+}
+.rating-star:hover {
+    transform: scale(1.2);
+}
+.metadata-label {
+    font-weight: bold;
+    margin-right: 5px;
+}
+

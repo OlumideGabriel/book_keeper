@@ -29,6 +29,7 @@ class Book(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('authors.id'), nullable=False)
     thumbnail = db.Column(db.String(500), nullable=True)  # URL for book cover thumbnail
     date_added = db.Column(db.Date, nullable=True, default=datetime.utcnow)
+    rating = db.Column(db.Float, nullable=True)
 
     def __repr__(self):
         return f"<Book(id={self.id}, title='{self.title}', author_id={self.author_id})>"

@@ -52,7 +52,7 @@ def search_google_books(query, max_results=5):
 
 
 # Example usage
-query = "Humbert Summer"
+query = "Konji"
 books_info = search_google_books(query)
 
 # Print results

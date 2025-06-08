@@ -32,6 +32,9 @@
 
       {% if success_message %}
         <div class="alert alert-success text-center">{{ success_message }}</div>
+      {% elif danger_message %}
+      <div class="alert alert-danger text-center">{{ danger_message }}</div>
+
       {% endif %}
 
       <form action="/add_book" method="POST" class="card p-4 shadow-sm">

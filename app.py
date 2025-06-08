@@ -1,8 +1,9 @@
-from flask import Flask, request, render_template, jsonify, flash, redirect, url_for
+from flask import Flask, request, render_template, jsonify, flash, redirect, url_for, current_app
 from flask_wtf.csrf import CSRFProtect
 from flask_wtf import FlaskForm
 from flask_migrate import Migrate
-from wtforms import StringField, DateField, SelectField, validators
+from wtforms import StringField, DateField, SelectField, validators, FloatField
+from wtforms.validators import DataRequired, NumberRange
 import secrets
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.exceptions import BadRequest
@@ -155,6 +156,46 @@ class EditBookForm(FlaskForm):
     author_id = SelectField('Author', coerce=int, validators=[validators.InputRequired()])
     isbn = StringField('ISBN')
     thumbnail = StringField('Cover Image URL')
+    rating = FloatField('Rating (1-10)',
+                        validators=[NumberRange(min=1, max=10, message="Rating must be between 1 and 10")])
+
+
+@app.route('/get_thumbnail')
+def get_thumbnail():
+    try:
+        isbn = request.args.get('isbn')
+        title = request.args.get('title')
+        author = request.args.get('author')
+
+        # First try with ISBN if available
+        if isbn:
+            thumbnail_url = get_book_thumbnail(isbn)
+            if thumbnail_url != "https://upittpress.org/wp-content/themes/pittspress/images/no_cover_available.png":
+                return jsonify({'thumbnail': thumbnail_url})
+
+        # If ISBN didn't work or isn't available, try with title and author
+        if title and author:
+            base_url = "https://www.googleapis.com/books/v1/volumes"
+            params = {
+                "q": f"intitle:{title}+inauthor:{author}",
+                "maxResults": 1,
+                "fields": "items(volumeInfo/imageLinks)"
+            }
+
+            response = requests.get(base_url, params=params)
+            if response.status_code == 200:
+                data = response.json()
+                items = data.get("items", [])
+                if items:
+                    image_links = items[0].get("volumeInfo", {}).get("imageLinks", {})
+                    thumbnail_url = image_links.get("thumbnail", "")
+                    if thumbnail_url:
+                        return jsonify({'thumbnail': thumbnail_url})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    # If nothing found, return the default
+    return jsonify({'thumbnail': "https://upittpress.org/wp-content/themes/pittspress/images/no_cover_available.png"})
 
 
 @app.route('/')
@@ -198,6 +239,7 @@ def home():
             "id": book.id,
             "title": book.title,
             "author": book.author.name,
+            "author_id": book.author.id,
             "publication_date": book.publication_date,
             "thumbnail": book.thumbnail,
             "isbn": book.isbn,
@@ -308,46 +350,6 @@ def add_author():
     return render_template('add_author.html')  # Assuming the form is saved as a template
 
 
-@app.route('/author/<int:author_id>/edit', methods=['GET', 'POST'])
-def edit_author(author_id):
-    author = Author.query.get_or_404(author_id)
-
-    if request.method == 'POST':
-        try:
-            # Update author details
-            author.name = request.form.get('name')
-            author.birth_date = datetime.strptime(
-                request.form.get('birth_date'),
-                '%Y-%m-%d'
-            ).date()
-
-            date_of_death = request.form.get('date_of_death')
-            author.date_of_death = (
-                datetime.strptime(date_of_death, '%Y-%m-%d').date()
-                if date_of_death
-                else None
-            )
-
-            db.session.commit()
-            flash('Author updated successfully!', 'success')
-            return redirect(url_for('author_detail', author_id=author.id))
-
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error updating author: {str(e)}', 'danger')
-
-    # Format dates for the form
-    birth_date = author.birth_date.strftime('%Y-%m-%d') if author.birth_date else ''
-    date_of_death = author.date_of_death.strftime('%Y-%m-%d') if author.date_of_death else ''
-
-    return render_template(
-        'edit_author.html',
-        author=author,
-        birth_date=birth_date,
-        date_of_death=date_of_death
-    )
-
-
 @app.route('/author/<int:author_id>/delete', methods=['POST'])
 def delete_author(author_id):
     if request.method == 'POST':
@@ -391,6 +393,15 @@ def add_book():
             # Fetch ISBN dynamically using Open Library API
             book_details = fetch_book_details_from_google_books(title, author.name)
 
+            # Check if the book isbn exists
+            book_isbn = Book.query.filter_by(isbn=book_details['ISBN-13']).first()
+            if book_isbn:
+                return render_template(
+                    'add_book.html',
+                    authors=Author.query.all(),
+                    danger_message="Book already exists!"
+                )
+
             # After getting book_details from Google Books API
             thumbnail_isbn = get_book_thumbnail(book_details['ISBN-13'])
 
@@ -432,6 +443,7 @@ def edit_book(book_id):
         form.author_id.data = book.author_id
         form.isbn.data = book.isbn
         form.thumbnail.data = book.thumbnail
+        form.rating.data = book.rating  # Add this line for the rating field
 
     if form.validate_on_submit():
         try:
@@ -440,6 +452,7 @@ def edit_book(book_id):
             book.author_id = form.author_id.data
             book.isbn = form.isbn.data
             book.thumbnail = form.thumbnail.data
+            book.rating = form.rating.data  # Add this line for the rating field
 
             db.session.commit()
             flash('Book updated successfully!', 'success')
@@ -455,15 +468,6 @@ def edit_book(book_id):
         form=form,
         publication_date=book.publication_date.strftime('%Y-%m-%d') if book.publication_date else ''
     )
-
-
-@app.route('/rate-book', methods=['POST'])
-def rate_book():
-    data = request.get_json()
-    book = Book.query.get(data['book_id'])
-    book.rating = data['rating']  # Or create new Rating record
-    db.session.commit()
-    return jsonify({'success': True})
 
 
 @app.route('/book/<int:book_id>/delete', methods=['POST'])
@@ -495,11 +499,47 @@ def book_detail(book_id):
     return render_template('book_detail.html', book=book)
 
 
+@app.route('/suggest-book')
+def suggest_book():
+    return render_template('suggest_book.html')
+
+
 @app.errorhandler(BadRequest)
 def handle_csrf_error(e):
     if 'CSRF token' in str(e.description):
         return render_template('csrf_error.html', reason=e.description), 400
     return e
+
+
+# Error handlers
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    return render_template('500.html'), 500
+
+
+@app.errorhandler(ValueError)
+def handle_value_error(error):
+    return render_template('400.html', error=error), 400
+
+
+@app.errorhandler(KeyError)
+def handle_value_error(error):
+    return render_template('KeyError.html', error=error), 400
+
+
+@app.errorhandler(TypeError)
+def handle_value_error(error):
+    return render_template('404.html', error=error), 400
+
+
+@app.errorhandler(405)
+def handle_method_not_allowed(error):
+    return render_template('405.html', error=error), 405
 
 
 if __name__ == '__main__':

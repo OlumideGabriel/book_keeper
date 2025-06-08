@@ -17,8 +17,7 @@
                                 name="search"
                                 class="form-control search-input"
                                 placeholder="Search books..."
-                                value="{{ request.args.get('search', '') }}"
-                                oninput="this.form.submit()">
+                                value="{{ request.args.get('search', '') }}">
                         </form>
                     </div>
 
@@ -70,7 +69,7 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div>{{ book.author }}</div>
-                                            <form action="/author/{{ book.author.id }}/delete" method="POST">
+                                            <form action="/author/{{ book.author_id }}/delete" method="POST">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <button type="submit" class="btn btn-sm m-1 icon-outline"
                                                         onclick="return confirm('Are you sure you want to delete this author and ALL their books?')">
@@ -145,3 +144,5 @@
 {% endif %}
 
 {% endblock %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
