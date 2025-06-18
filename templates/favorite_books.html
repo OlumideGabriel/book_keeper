@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+
+<div class="row">
+  <h2 class="mb-4">Favorite Books</h2>
+    {% if favorite_books %}
+        {% for book in favorite_books %}
+            <div class="col-md-4 mb-3">
+                <!-- link to book detail page -->
+                <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                <div class="card book-card h-100 d-flex flex-row">
+
+                    <!-- Thumbnail section -->
+                    <div class="card-thumbnail-wrapper d-flex justify-content-center align-items-center p-2" style="width: 40%;">
+                        {% if book.thumbnail %}
+                            <img src="{{ book.thumbnail }}" class="img-fluid book-cover" alt="Book Cover" style="max-height: 150px; object-fit: cover;">
+                        {% else %}
+                            <img src="https://upittpress.org/wp-content/themes/pittspress/images/no_cover_available.png" class="img-fluid book-cover" alt="No Cover Available" style="max-height: 150px; object-fit: cover;">
+                        {% endif %}
+                    </div>
+
+                    <!-- Book details section -->
+                    <div class="card-body" style="width: 60%;">
+                        <h5 class="card-title">{{ book.title }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">
+                            {{ book.author.name if book.author else 'Unknown' }}
+                        </h6>
+                        <p class="card-text">
+                            <strong>ISBN:</strong> {{ book.isbn }}<br>
+                            <strong>Published:</strong> {{ book.publication_date.strftime('%Y-%m-%d') if book.publication_date else 'Unknown' }}<br>
+                            <strong>Rating:</strong> {{ "%.1f"|format(book.rating) }}
+                        </p>
+                    </div>
+
+                </div>
+                </a>
+</div>
+
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                No favorite books found (rating 7.0 or above).
+                Read and rate more books to get better recommendations!
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

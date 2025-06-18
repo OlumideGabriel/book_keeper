@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Error {{ error_code }} - {{ error_message }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f8f9fa; }
+        h1 { font-size: 60px; color: #dc3545; margin-bottom: 0; }
+        h2 { font-size: 30px; color: #6c757d; margin-top: 10px; }
+        p { font-size: 18px; margin-top: 20px; }
+        a { text-decoration: none; color: #007BFF; }
+        a:hover { text-decoration: underline; }
+        footer { margin-top: 40px; font-size: 14px; color: #adb5bd; }
+    </style>
+</head>
+<body>
+    <h1>{{ error_code }}</h1>
+    <h2>{{ error_message }}</h2>
+    <p>{{ error_description }}</p>
+    <p><a href="/">Return to homepage</a></p>
+    <footer>&copy; {{ current_year }} Rare Reads Bookstore</footer>
+</body>
+</html>

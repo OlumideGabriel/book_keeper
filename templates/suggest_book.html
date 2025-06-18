@@ -1,6 +1,61 @@
 {% extends "base.html" %}
 
-{% block title %}Edit {{ book.title }}{% endblock %}
 
 {% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="mb-4">Get Book Recommendations</h2>
+
+        <div class="card1 mb-5">
+            <div class="card-body">
+                <form method="POST">
+                    {% if favorite_books %}
+                        <div style="display: flex; justify-content: center; margin: 40px 0;">
+                          <button class="sexy-button" id="recommend-button">
+                          <span class="button-text">Generate Recommendations</span>
+                          <span class="button-icon">✨</span>
+                          <span class="loading-dots"></span>
+                          </button>
+                        </div>
+                    {% endif %}
+                </form>
+            </div>
+
+            {% if recommendation %}
+            <div class="card1 mt-4">
+                <div class="card-body">
+                    <div class="recommendation-box p-4">
+                        <div class="row ">
+                          {% for book in recommended_books %}
+                            <div class="card p-2 col-md-4 mb-4">
+                              <div class="d-flex align-items-start">
+                                {% if book.thumbnail %}
+                                  <img src="{{ book.thumbnail }}" alt="Cover" style="width: 100px; height: 150px; object-fit: cover; margin-right: 15px;">
+                                {% endif %}
+                                <div>
+                                  <strong>{{ book.title }}</strong><br>
+                                  {% if book.author %}
+                                    By: {{ book.author }}<br>
+                                  {% endif %}
+                                  {% if book.description %}
+                                    <small>{{ book.description[:100] }}...</small>
+                                  {% endif %}
+                                </div>
+                              </div>
+                            </div>
+                          {% endfor %}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
 {% endblock %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+
